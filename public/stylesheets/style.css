@@ -17,6 +17,17 @@ h1 {
     font-weight: 300;
 }
 
+select {
+    font-size: 30px;
+    font-family: 'Lato', sans-serif;
+    font-weight: 300;
+    width: 25%;
+}
+
+#visual {
+    color: #349597;
+}
+
 .wrapper {
     margin: 5em auto;
     text-align: center;
