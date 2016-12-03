@@ -1,5 +1,5 @@
 @import url(http://fonts.googleapis.com/css?family=Norican);
-html, body {margin:0;background:#001a1a;}
+/*html, body {margin:0;background:#001a1a;}*/
 
 h1 {
   font-size:30px;
@@ -102,4 +102,22 @@ h1 {
     0 0 30px 220px #45c2c5,
     0 0 5px 230px transparent;
   }
+}
+.wrapper {
+  height: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+canvas {
+  position: absolute;
+  border-top: 1px solid black;
+  border-bottom: 1px solid black;
+  margin-bottom: -3px;
+  box-shadow: 0 -2px 4px rgba(0,0,0,0.7),
+  0 3px 4px rgba(0,0,0,0.7);
+}
+
+canvas {
+  display: inline-block;
 }
