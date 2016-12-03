@@ -1,6 +1,5 @@
 // fork getUserMedia for multiple browser versions, for those
 // that need prefixes
-
 navigator.getUserMedia = (navigator.getUserMedia ||
 navigator.webkitGetUserMedia ||
 navigator.mozGetUserMedia ||
@@ -8,17 +7,12 @@ navigator.msGetUserMedia);
 
 // set up forked web audio context, for multiple browsers
 // window. is needed otherwise Safari explodes
-
 var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-// var voiceSelect = document.getElementById("voice");
+var voiceSelect = document.getElementById("voice");
 // var source;
 // var stream;
 
-// grab the mute button to use below
-// var mute = document.querySelector('.mute');
-
 //set up the different audio nodes we will use for the app
-
 var analyser = audioCtx.createAnalyser();
 analyser.minDecibels = -90;
 analyser.maxDecibels = -10;
@@ -48,30 +42,30 @@ function makeDistortionCurve(amount) {
 
 // grab audio track via XHR for convolver node
 
-// var soundSource, concertHallBuffer;
+var soundSource, concertHallBuffer;
 
-// ajaxRequest = new XMLHttpRequest();
+ajaxRequest = new XMLHttpRequest();
 
-// ajaxRequest.open('GET', 'https://mdn.github.io/voice-change-o-matic/audio/concert-crowd.ogg', true);
-//
-// ajaxRequest.responseType = 'arraybuffer';
-//
-//
-// ajaxRequest.onload = function() {
-//     var audioData = ajaxRequest.response;
-//
-//     audioCtx.decodeAudioData(audioData, function(buffer) {
-//         concertHallBuffer = buffer;
-//         soundSource = audioCtx.createBufferSource();
-//         soundSource.buffer = concertHallBuffer;
-//     }, function(e){"Error with decoding audio data" + e.err});
+ajaxRequest.open('GET', 'https://mdn.github.io/voice-change-o-matic/audio/concert-crowd.ogg', true);
 
-    //soundSource.connect(audioCtx.destination);
-    //soundSource.loop = true;
-    //soundSource.start();
-// }
+ajaxRequest.responseType = 'arraybuffer';
 
-// ajaxRequest.send();
+
+ajaxRequest.onload = function() {
+    var audioData = ajaxRequest.response;
+
+    audioCtx.decodeAudioData(audioData, function(buffer) {
+        concertHallBuffer = buffer;
+        soundSource = audioCtx.createBufferSource();
+        soundSource.buffer = concertHallBuffer;
+    }, function(e){"Error with decoding audio data" + e.err});
+
+    soundSource.connect(audioCtx.destination);
+    soundSource.loop = true;
+    soundSource.start();
+};
+
+ajaxRequest.send();
 
 // set up canvas context for visualizer
 
@@ -87,7 +81,6 @@ var visualSelect = document.getElementById("visual");
 var drawVisual;
 
 //main block for doing the audio recording
-
 if (navigator.getUserMedia) {
     console.log('getUserMedia supported.');
     navigator.getUserMedia (
@@ -101,14 +94,8 @@ if (navigator.getUserMedia) {
             source = audioCtx.createMediaStreamSource(stream);
             source.connect(analyser);
             analyser.connect(distortion);
-            distortion.connect(biquadFilter);
-            biquadFilter.connect(convolver);
-            convolver.connect(gainNode);
             gainNode.connect(audioCtx.destination);
-
             visualize();
-            voiceChange();
-
         },
 
         // Error callback
@@ -210,53 +197,26 @@ function visualize() {
         canvasCtx.fillStyle = "red";
         canvasCtx.fillRect(0, 0, WIDTH, HEIGHT);
     }
-
 }
 
-// function voiceChange() {
-//
-//     distortion.oversample = '4x';
-//     biquadFilter.gain.value = 0;
-//     convolver.buffer = undefined;
-//
-//     var voiceSetting = voiceSelect.value;
-//     console.log(voiceSetting);
-//
-//     if(voiceSetting == "distortion") {
-//         distortion.curve = makeDistortionCurve(400);
-//     } else if(voiceSetting == "convolver") {
-//         convolver.buffer = concertHallBuffer;
-//     } else if(voiceSetting == "biquad") {
-//         biquadFilter.type = "lowshelf";
-//         biquadFilter.frequency.value = 1000;
-//         biquadFilter.gain.value = 25;
-//     } else if(voiceSetting == "off") {
-//         console.log("Voice settings turned off");
-//     }
-//
-// }
-
 // event listeners to change visualize and voice settings
+function voiceChange() {
+
+    distortion.oversample = '4x';
+
+    var voiceSetting = voiceSelect.value;
+    console.log(voiceSetting);
+
+    if(voiceSetting == "distortion") {
+        distortion.curve = makeDistortionCurve(400);
+    }
+}
 
 visualSelect.onchange = function() {
     window.cancelAnimationFrame(drawVisual);
     visualize();
+};
+
+voiceSelect.onchange = function() {
+    voiceChange();
 }
-
-// voiceSelect.onchange = function() {
-//     voiceChange();
-// }
-
-// mute.onclick = voiceMute;
-//
-// function voiceMute() {
-//     if(mute.id == "") {
-//         gainNode.gain.value = 0;
-//         mute.id = "activated";
-//         mute.innerHTML = "Unmute";
-//     } else {
-//         gainNode.gain.value = 1;
-//         mute.id = "";
-//         mute.innerHTML = "Mute";
-//     }
-// }

@@ -119,7 +119,6 @@ function visualize() {
     WIDTH = canvas.width;
     HEIGHT = canvas.height;
 
-
     var visualSetting = visualSelect.value;
     console.log(visualSetting);
 
@@ -137,11 +136,11 @@ function visualize() {
 
             analyser.getByteTimeDomainData(dataArray);
 
-            canvasCtx.fillStyle = 'rgb(200, 200, 200)';
+            canvasCtx.fillStyle = 'rgb(18, 22, 33)';
             canvasCtx.fillRect(0, 0, WIDTH, HEIGHT);
 
             canvasCtx.lineWidth = 2;
-            canvasCtx.strokeStyle = 'rgb(0, 0, 0)';
+            canvasCtx.strokeStyle = 'rgb(128, 255, 255)';
 
             canvasCtx.beginPath();
 
@@ -181,7 +180,8 @@ function visualize() {
 
             analyser.getByteFrequencyData(dataArray);
 
-            canvasCtx.fillStyle = 'rgb(0, 0, 0)';
+            canvasCtx.fillStyle = 'rgb(18, 22, 33)';
+            // canvasCtx.fillRect(128, 255, 255);
             canvasCtx.fillRect(0, 0, WIDTH, HEIGHT);
 
             var barWidth = (WIDTH / bufferLength) * 2.5;
@@ -191,7 +191,7 @@ function visualize() {
             for(var i = 0; i < bufferLength; i++) {
                 barHeight = dataArray[i];
 
-                canvasCtx.fillStyle = 'rgb(' + (barHeight+100) + ',50,50)';
+                canvasCtx.fillStyle = 'rgb(' + (barHeight+100) + ',240,240)';
                 canvasCtx.fillRect(x,HEIGHT-barHeight/2,barWidth,barHeight/2);
 
                 x += barWidth + 1;
@@ -202,7 +202,8 @@ function visualize() {
 
     } else if(visualSetting == "off") {
         canvasCtx.clearRect(0, 0, WIDTH, HEIGHT);
-        canvasCtx.fillStyle = "red";
+
+        canvasCtx.fillStyle = "cyan";
         canvasCtx.fillRect(0, 0, WIDTH, HEIGHT);
     }
 
