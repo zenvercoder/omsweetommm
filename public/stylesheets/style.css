@@ -46,3 +46,105 @@ select {
     color: #f1f1f1;
     background-color: #20283B;
 }
+
+/*.container{*/
+    /*background-color:blue;*/
+    /*width:200px;*/
+    /*height:200px;*/
+/*}*/
+
+.lotus-flower{
+
+}
+
+
+
+#center{
+    /*--open-color:#e5cdda;*/
+    --open-color:#d9f1f2;
+}
+#l1{
+    /*--open-color:#7a5278;*/
+    --open-color:#225d5e;
+}
+
+#l2{
+    /*--open-color:#7a5278;*/
+    --open-color:#225d5e;
+}
+
+#l3{
+    /*--open-color:#5c3d5a;*/
+    --open-color:#1b4a4b;
+}
+
+#r1{
+    /*--open-color:#7a5278;*/
+    --open-color:#235a5c;
+}
+
+#r2{
+    /*--open-color:#7a5278;*/
+    --open-color:#225d5e;
+}
+
+#r3{
+    /*--open-color:#5c3d5a;*/
+    --open-color:#1b4a4b;
+}
+
+#shadow{
+    --close-width:50%;
+}
+
+.lotus-flower:hover .petal-l{
+    -webkit-transform-origin: right bottom;
+    -ms-transform: rotate(); /* IE 9 */
+    -webkit-transform: rotate(0deg); /* Chrome, Safari, Opera */
+    transform: rotate(0deg);
+    fill:var(--open-color);
+    stroke:var(--open-color);
+}
+
+.petal-l{
+    -webkit-transform-origin: right bottom;
+    -ms-transform-origin: right bottom;
+    transform-origin: right bottom;
+    /*-ms-transform: rotate(var(--close-angle)); !* IE 9 *!*/
+    -webkit-transform: rotate(var(--close-angle)); /* Chrome, Safari, Opera */
+    /*transform: rotate(var(--close-angle));*/
+    -webkit-transition: transform 1s, fill 1s, stroke 1s; /* Safari 3.1 to 6.0 */
+    transition: transform 1s, fill 1s, stroke 1s;
+}
+
+.lotus-flower:hover .petal-r{
+    -webkit-transform-origin: left bottom;
+    -ms-transform: rotate(0deg); /* IE 9 */
+    -webkit-transform: rotate(0deg); /* Chrome, Safari, Opera */
+    transform: rotate(0deg);
+    fill:var(--open-color);
+    stroke:var(--open-color);
+}
+
+.petal-r{
+    -webkit-transform-origin: left bottom;
+    -ms-transform-origin: left bottom;
+    transform-origin: left bottom;
+    /*-ms-transform: rotate(var(--close-angle)); !* IE 9 *!*/
+    /*-webkit-transform: rotate(var(--close-angle)); !* Chrome, Safari, Opera *!*/
+    /*transform: rotate(var(--close-angle));*/
+    -webkit-transition: transform 1s, fill 1s, stroke 1s; /* Safari 3.1 to 6.0 */
+    transition: transform 1s, fill 1s, stroke 1s;
+}
+
+.shadow{
+    rx:65px;
+    -webkit-transition: rx 1s, fill 1s, stroke 1s; /* Safari 3.1 to 6.0 */
+    transition: rx 1s, fill 1s, stroke 1s;
+}
+
+.lotus-flower:hover .shadow{
+    rx:150.5px;
+}
+
+
