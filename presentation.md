@@ -36,6 +36,14 @@
 
 * [Visualizations with Web Audio API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Visualizations_with_Web_Audio_API)
 
+## Day 4
+
+* Made zero progress. Well, no discernible progress anyway. I learned more about what is going on in the code and things that can break the app (I broke it more than once). However, I did cut out some fat and learned more about frequency.
+
+
+
+
+
 ## Other Cool Pens
 
 * also found http://codepen.io/Yakudoo/pen/zxgzMQ and http://codepen.io/chrisgannon/pen/ZWRgza
