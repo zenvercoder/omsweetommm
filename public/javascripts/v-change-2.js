@@ -9,40 +9,24 @@ navigator.msGetUserMedia);
 // set up forked web audio context, for multiple browsers
 // window. is needed otherwise Safari explodes
 
+// ***** To extract data from your audio source, you need an AnalyserNode,
 var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-var voiceSelect = document.getElementById("voice");
+// myScriptProcessor = audioCtx.createScriptProcessor(1024, 1, 1);
+
 var source;
 var stream;
 
-// grab the mute button to use below
-// var mute = document.querySelector('.mute');
-
-//set up the different audio nodes we will use for the app
 var analyser = audioCtx.createAnalyser();
+// human voice 1 -80 decibels. changing min and max made whole window disappear
 analyser.minDecibels = -90;
 analyser.maxDecibels = -10;
+//an average between the current buffer and the last buffer the AnalyserNode processed, and results in a much smoother set of value changes over time.
 analyser.smoothingTimeConstant = 0.85;
 
 var distortion = audioCtx.createWaveShaper();
 var gainNode = audioCtx.createGain();
 var biquadFilter = audioCtx.createBiquadFilter();
 var convolver = audioCtx.createConvolver();
-
-// distortion curve for the waveshaper, thanks to Kevin Ennis
-// http://stackoverflow.com/questions/22312841/waveshaper-node-in-webaudio-how-to-emulate-distortion
-function makeDistortionCurve(amount) {
-    var k = typeof amount === 'number' ? amount : 50,
-        n_samples = 44100,
-        curve = new Float32Array(n_samples),
-        deg = Math.PI / 180,
-        i = 0,
-        x;
-    for ( ; i < n_samples; ++i ) {
-        x = i * 2 / n_samples - 1;
-        curve[i] = ( 3 + k ) * x * 20 * deg / ( Math.PI + k * Math.abs(x) );
-    }
-    return curve;
-};
 
 // grab audio track via XHR for convolver node
 var soundSource, concertHallBuffer;
@@ -53,11 +37,10 @@ ajaxRequest.open('GET', 'https://mdn.github.io/voice-change-o-matic/audio/concer
 
 ajaxRequest.responseType = 'arraybuffer';
 
-
-ajaxRequest.onload = function() {
+ajaxRequest.onload = function () {
     var audioData = ajaxRequest.response;
 
-    audioCtx.decodeAudioData(audioData, function(buffer) {
+    audioCtx.decodeAudioData(audioData, function (buffer) {
         concertHallBuffer = buffer;
         soundSource = audioCtx.createBufferSource();
         soundSource.buffer = concertHallBuffer;
@@ -71,13 +54,25 @@ ajaxRequest.onload = function() {
 ajaxRequest.send();
 
 // set up canvas context for visualizer
-
 var canvas = document.querySelector('.visualizer');
 var canvasCtx = canvas.getContext("2d");
 
 var intendedWidth = document.querySelector('.wrapper').clientWidth;
+// console.log("intendedWidth= " + intendedWidth);
+canvas.setAttribute('width', intendedWidth);
 
-canvas.setAttribute('width',intendedWidth);
+// var halfIntendedWidth = intendedWidth / 2;
+// canvas.setAttribute('width',halfIntendedWidth);
+// console.log("canvas now halfIntendedWidth= " + halfIntendedWidth);
+
+// var doubleIntendedWidth = intendedWidth * 2;
+// canvas.setAttribute('width',doubleIntendedWidth);
+// console.log("canvas now doubleIntendedWidth= " + doubleIntendedWidth);
+
+// not much difference btwn quad and intended width
+// var quadIntendedWidth = intendedWidth * 4;
+// canvas.setAttribute('width',quadIntendedWidth);
+// console.log("canvas now quadIntendedWidth= " + quadIntendedWidth);
 
 var visualSelect = document.getElementById("visual");
 
@@ -86,16 +81,17 @@ var drawVisual;
 // main block for doing the audio recording
 if (navigator.getUserMedia) {
     console.log('getUserMedia supported.');
-    navigator.getUserMedia (
+    navigator.getUserMedia(
         // constraints - only audio needed for this app
         {
             audio: true
         },
 
         // Success callback
-        function(stream) {
+        function (stream) {
             source = audioCtx.createMediaStreamSource(stream);
             source.connect(analyser);
+
             analyser.connect(distortion);
             distortion.connect(biquadFilter);
             biquadFilter.connect(convolver);
@@ -103,11 +99,10 @@ if (navigator.getUserMedia) {
             gainNode.connect(audioCtx.destination);
 
             visualize();
-            voiceChange();
         },
 
         // Error callback
-        function(err) {
+        function (err) {
             console.log('The following gUM error occured: ' + err);
         }
     );
@@ -115,6 +110,7 @@ if (navigator.getUserMedia) {
     console.log('getUserMedia not supported on your browser!');
 }
 
+// The voiced speech of a typical adult male will have a fundamental frequency from 85 to 180 Hz, and that of a typical adult female from 165 to 255 Hz.
 function visualize() {
     WIDTH = canvas.width;
     HEIGHT = canvas.height;
@@ -122,10 +118,13 @@ function visualize() {
     var visualSetting = visualSelect.value;
     console.log(visualSetting);
 
-    if(visualSetting == "sinewave") {
+    if (visualSetting == "sinewave") {
+        // representing the size of the FFT (Fast Fourier Transform) to be used to determine the frequency domain.
         analyser.fftSize = 2048;
+        // analyser.fftSize = 256;
         var bufferLength = analyser.fftSize;
-        console.log(bufferLength);
+        console.log("bufferLength= " + bufferLength);
+        // think I might have stumbled onto something here
         var dataArray = new Uint8Array(bufferLength);
 
         canvasCtx.clearRect(0, 0, WIDTH, HEIGHT);
@@ -147,12 +146,12 @@ function visualize() {
             var sliceWidth = WIDTH * 1.0 / bufferLength;
             var x = 0;
 
-            for(var i = 0; i < bufferLength; i++) {
+            for (var i = 0; i < bufferLength; i++) {
 
                 var v = dataArray[i] / 128.0;
-                var y = v * HEIGHT/2;
+                var y = v * HEIGHT / 2;
 
-                if(i === 0) {
+                if (i === 0) {
                     canvasCtx.moveTo(x, y);
                 } else {
                     canvasCtx.lineTo(x, y);
@@ -161,97 +160,94 @@ function visualize() {
                 x += sliceWidth;
             }
 
-            canvasCtx.lineTo(canvas.width, canvas.height/2);
+            canvasCtx.lineTo(canvas.width, canvas.height / 2);
             canvasCtx.stroke();
         };
 
         draw();
 
-    } else if(visualSetting == "frequencybars") {
+    } else if (visualSetting == "frequencybars") {
+        // representing the size of the FFT (Fast Fourier Transform) to be used to determine the frequency domain.
+        //with 2048, the bars are skinnier and prettier
+        // analyser.fftSize = 2048;
         analyser.fftSize = 256;
+        // unsigned long value half that of the FFT size
+        // This generally equates to the number of data values you will have to play with for the visualization.
         var bufferLength = analyser.frequencyBinCount;
-        console.log(bufferLength);
+        // console.log("bufferLength= " + bufferLength);
         var dataArray = new Uint8Array(bufferLength);
 
+        // canvasCtx.fillRect(128, 255, 255);
+        // x =The x-coordinate of the upper-left corner of the rectangle to clear
+        // y = The y-coordinate of the upper-left corner of the rectangle to clear
+        // width = The width of the rectangle to clear, in pixels
+        // height = The height of the rectangle to clear, in pixels
+
+        //clear the canvas of what had been drawn on it before to get ready for the new visualization display
         canvasCtx.clearRect(0, 0, WIDTH, HEIGHT);
 
         function draw() {
+
             drawVisual = requestAnimationFrame(draw);
 
             analyser.getByteFrequencyData(dataArray);
+            // the below makes it look almost like a sinewave
+            // analyser.getByteTimeDomainData(dataArray);
+
+            // console.log(dataArray, dataArray.filter);
+
+            var voiceFreqs = dataArray.filter(function(frequency){
+                if(frequency >= 80 && frequency <= 255){
+                    return true;
+                } else {
+                    return false;
+                }
+            });
+            console.log(voiceFreqs);
+
 
             canvasCtx.fillStyle = 'rgb(18, 22, 33)';
-            // canvasCtx.fillRect(128, 255, 255);
+
+            // changing this x (350) and y (350) makes the bars stay
             canvasCtx.fillRect(0, 0, WIDTH, HEIGHT);
 
-            var barWidth = (WIDTH / bufferLength) * 2.5;
+            var barWidth = (WIDTH / bufferLength) * 2;
+            // barHeight = frequency
             var barHeight;
             var x = 0;
 
-            for(var i = 0; i < bufferLength; i++) {
+            // while(bufferLength > 0){}
+            for (var i = 0; i < bufferLength; i++) {
                 barHeight = dataArray[i];
+                // human voice 85-255
+                // barHeight = frequency
+                // console.log("barHeight= " + barHeight);
 
-                canvasCtx.fillStyle = 'rgb(' + (barHeight+100) + ',240,240)';
-                canvasCtx.fillRect(x,HEIGHT-barHeight/2,barWidth,barHeight/2);
+                canvasCtx.fillStyle = 'rgb(' + (barHeight + 150) + ',240,240)';
+                // canvasCtx.fillRect(x,HEIGHT-barHeight/2,barWidth,barHeight/2);
+
+                // ctx.fillRect(x, y, width, height);
+                // x = The x axis of the coordinate for the rectangle starting point.
+                // y = The y axis of the coordinate for the rectangle starting point.
+                canvasCtx.fillRect(x + 75, HEIGHT - barHeight / 2, barWidth, barHeight / 2);
 
                 x += barWidth + 1;
+
             }
-        };
+        }
 
         draw();
 
-    } else if(visualSetting == "off") {
+    } else if (visualSetting == "off") {
         canvasCtx.clearRect(0, 0, WIDTH, HEIGHT);
 
         canvasCtx.fillStyle = "cyan";
         canvasCtx.fillRect(0, 0, WIDTH, HEIGHT);
     }
-
-}
-
-function voiceChange() {
-
-    distortion.oversample = '4x';
-    biquadFilter.gain.value = 0;
-    convolver.buffer = undefined;
-
-    var voiceSetting = voiceSelect.value;
-    console.log(voiceSetting);
-
-    if(voiceSetting == "distortion") {
-        distortion.curve = makeDistortionCurve(400);
-    } else if(voiceSetting == "convolver") {
-        convolver.buffer = concertHallBuffer;
-    } else if(voiceSetting == "biquad") {
-        biquadFilter.type = "lowshelf";
-        biquadFilter.frequency.value = 1000;
-        biquadFilter.gain.value = 25;
-    } else if(voiceSetting == "off") {
-        console.log("Voice settings turned off");
-    }
-
 }
 
 // event listeners to change visualize and voice settings
-visualSelect.onchange = function() {
+visualSelect.onchange = function () {
     window.cancelAnimationFrame(drawVisual);
     visualize();
 };
-
-voiceSelect.onchange = function() {
-    voiceChange();
-};
-
-mute.onclick = voiceMute;
-
-function voiceMute() {
-    if(mute.id == "") {
-        gainNode.gain.value = 0;
-        mute.id = "activated";
-        mute.innerHTML = "Unmute";
-    } else {
-        gainNode.gain.value = 1;
-        mute.id = "";
-        mute.innerHTML = "Mute";
-    }
-}
