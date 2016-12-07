@@ -40,9 +40,17 @@
 
 * Made zero progress. Well, no discernible progress anyway. I learned more about what is going on in the code and things that can break the app (I broke it more than once). However, I did cut out some fat and learned more about frequency.
 
+## Day 5
 
+* Feels like I made very little progress, but I'm still learning a lot and I feel like I'm allllmost there. The waves look a little better. I'm now getting a frequency readout in the console. I want to make the canvas bigger/smaller if the frequency is within human range. 
 
+* Tried some things like `var halfIntendedWidth = intendedWidth / 2;`
 
+* `var ctx = document.getElementById('canvas').getContext('2d');` 
+
+* `canvas.setAttribute`
+
+* `ctx.scale(x, y);`
 
 ## Other Cool Pens
 
