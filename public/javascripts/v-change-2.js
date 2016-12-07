@@ -120,12 +120,16 @@ function visualize() {
 
     if (visualSetting == "sinewave") {
         // representing the size of the FFT (Fast Fourier Transform) to be used to determine the frequency domain.
-        analyser.fftSize = 2048;
+        // analyser.fftSize = 2048;
+        analyser.fftSize = 1024;
+        // analyser.fftSize = 512;
         // analyser.fftSize = 256;
+        // analyser.fftSize = 128;
         var bufferLength = analyser.fftSize;
         console.log("bufferLength= " + bufferLength);
         // think I might have stumbled onto something here
         var dataArray = new Uint8Array(bufferLength);
+        console.log("dataArray= " + dataArray);
 
         canvasCtx.clearRect(0, 0, WIDTH, HEIGHT);
 
@@ -134,16 +138,17 @@ function visualize() {
             drawVisual = requestAnimationFrame(draw);
 
             analyser.getByteTimeDomainData(dataArray);
+            console.log("dataArray in draw()= " + dataArray);
 
-            canvasCtx.fillStyle = 'rgb(18, 22, 33)';
+            canvasCtx.fillStyle = 'rgb(0, 0, 26)';
             canvasCtx.fillRect(0, 0, WIDTH, HEIGHT);
 
-            canvasCtx.lineWidth = 2;
+            canvasCtx.lineWidth = 1;
             canvasCtx.strokeStyle = 'rgb(128, 255, 255)';
 
             canvasCtx.beginPath();
 
-            var sliceWidth = WIDTH * 1.0 / bufferLength;
+            var sliceWidth = WIDTH * 1 / bufferLength;
             var x = 0;
 
             for (var i = 0; i < bufferLength; i++) {
@@ -169,8 +174,9 @@ function visualize() {
     } else if (visualSetting == "frequencybars") {
         // representing the size of the FFT (Fast Fourier Transform) to be used to determine the frequency domain.
         //with 2048, the bars are skinnier and prettier
-        // analyser.fftSize = 2048;
-        analyser.fftSize = 256;
+        // analyser.fftSize = 4096;
+        analyser.fftSize = 2048;
+        // analyser.fftSize = 256;
         // unsigned long value half that of the FFT size
         // This generally equates to the number of data values you will have to play with for the visualization.
         var bufferLength = analyser.frequencyBinCount;
@@ -195,7 +201,6 @@ function visualize() {
             // analyser.getByteTimeDomainData(dataArray);
 
             // console.log(dataArray, dataArray.filter);
-
             var voiceFreqs = dataArray.filter(function(frequency){
                 if(frequency >= 80 && frequency <= 255){
                     return true;
@@ -205,33 +210,51 @@ function visualize() {
             });
             console.log(voiceFreqs);
 
+            // voiceFreqs: 0 = few, 20 = a lot
+            // new canvas size
+            // 0 = 300 pageX20 = 500 px large
+            var length = Math.min(voiceFreqs.length, 20) * 6 + 300;
+            // var length = Math.min(voiceFreqs.length, 20) * 10 + 400;
 
-            canvasCtx.fillStyle = 'rgb(18, 22, 33)';
+            canvas.width = length;
+            canvas.height = length;
+            document.querySelector("body").style.backgroundColor = "#00001a";
+
+            // midnight express blue
+            // canvasCtx.fillStyle = 'rgb(32, 40, 59)';
+
+            // canvas background
+            canvasCtx.fillStyle = 'rgb(0, 0, 26)';
 
             // changing this x (350) and y (350) makes the bars stay
             canvasCtx.fillRect(0, 0, WIDTH, HEIGHT);
 
-            var barWidth = (WIDTH / bufferLength) * 2;
+            // var barWidth = (WIDTH / bufferLength) * 4;
+            // var barWidth = (WIDTH / bufferLength) * 3;
+            // var barWidth = (WIDTH / bufferLength) * 2;
+            // bars skinnier than * 2
+            var barWidth = (WIDTH / bufferLength);
+            // var barWidth = (WIDTH / bufferLength) * 0.25;
+
+            // human voice 85-255
             // barHeight = frequency
             var barHeight;
             var x = 0;
 
-            // while(bufferLength > 0){}
             for (var i = 0; i < bufferLength; i++) {
                 barHeight = dataArray[i];
-                // human voice 85-255
-                // barHeight = frequency
-                // console.log("barHeight= " + barHeight);
 
-                canvasCtx.fillStyle = 'rgb(' + (barHeight + 150) + ',240,240)';
-                // canvasCtx.fillRect(x,HEIGHT-barHeight/2,barWidth,barHeight/2);
+                // color of bars
+                canvasCtx.fillStyle = 'rgb(179, 255, 255)';
+                // canvasCtx.fillStyle = 'rgb(52, 149, 151)'; //179, 255, 255
 
-                // ctx.fillRect(x, y, width, height);
-                // x = The x axis of the coordinate for the rectangle starting point.
-                // y = The y axis of the coordinate for the rectangle starting point.
-                canvasCtx.fillRect(x + 75, HEIGHT - barHeight / 2, barWidth, barHeight / 2);
+                // other best so far
+                // centered (ish) mirrored bars
+                // canvasCtx.fillRect(x, HEIGHT - barHeight / 3, barWidth, barHeight / 2);
 
-                x += barWidth + 1;
+                canvasCtx.fillRect(x, HEIGHT - barHeight / 2, barWidth * 2, barHeight / 1.25);
+
+                x += barWidth + 2;
 
             }
         }
@@ -241,7 +264,7 @@ function visualize() {
     } else if (visualSetting == "off") {
         canvasCtx.clearRect(0, 0, WIDTH, HEIGHT);
 
-        canvasCtx.fillStyle = "cyan";
+        // canvasCtx.fillStyle = "cyan";
         canvasCtx.fillRect(0, 0, WIDTH, HEIGHT);
     }
 }
@@ -251,3 +274,4 @@ visualSelect.onchange = function () {
     window.cancelAnimationFrame(drawVisual);
     visualize();
 };
+
