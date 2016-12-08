@@ -144,11 +144,12 @@ function visualize() {
             canvasCtx.fillRect(0, 0, WIDTH, HEIGHT);
 
             canvasCtx.lineWidth = 1;
-            canvasCtx.strokeStyle = 'rgb(128, 255, 255)';
+            canvasCtx.strokeStyle = 'rgb(179, 255, 255)';
 
             canvasCtx.beginPath();
 
-            var sliceWidth = WIDTH * 1 / bufferLength;
+            var sliceWidth = WIDTH * 4 / bufferLength;
+            // var sliceWidth = WIDTH * 1 / bufferLength;
             var x = 0;
 
             for (var i = 0; i < bufferLength; i++) {
@@ -167,7 +168,7 @@ function visualize() {
 
             canvasCtx.lineTo(canvas.width, canvas.height / 2);
             canvasCtx.stroke();
-        };
+        }
 
         draw();
 
