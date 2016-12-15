@@ -1,83 +1,38 @@
 // fork getUserMedia for multiple browser versions, for those
 // that need prefixes
-
 navigator.getUserMedia = (navigator.getUserMedia ||
 navigator.webkitGetUserMedia ||
 navigator.mozGetUserMedia ||
 navigator.msGetUserMedia);
-
 // set up forked web audio context, for multiple browsers
 // window. is needed otherwise Safari explodes
-
-// ***** To extract data from your audio source, you need an AnalyserNode,
 var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-// myScriptProcessor = audioCtx.createScriptProcessor(1024, 1, 1);
-
 var source;
 var stream;
-
 var analyser = audioCtx.createAnalyser();
-// human voice 1 -80 decibels. changing min and max made whole window disappear
 analyser.minDecibels = -90;
 analyser.maxDecibels = -10;
-//an average between the current buffer and the last buffer the AnalyserNode processed, and results in a much smoother set of value changes over time.
 analyser.smoothingTimeConstant = 0.85;
-
 var distortion = audioCtx.createWaveShaper();
 var gainNode = audioCtx.createGain();
 var biquadFilter = audioCtx.createBiquadFilter();
 var convolver = audioCtx.createConvolver();
-
-// grab audio track via XHR for convolver node
 var soundSource, concertHallBuffer;
 
 ajaxRequest = new XMLHttpRequest();
-
 ajaxRequest.open('GET', 'https://mdn.github.io/voice-change-o-matic/audio/concert-crowd.ogg', true);
-
 ajaxRequest.responseType = 'arraybuffer';
-
 ajaxRequest.onload = function () {
     var audioData = ajaxRequest.response;
-
     audioCtx.decodeAudioData(audioData, function (buffer) {
         concertHallBuffer = buffer;
         soundSource = audioCtx.createBufferSource();
         soundSource.buffer = concertHallBuffer;
-    }, function(e){"Error with decoding audio data" + e.err});
-
-    //soundSource.connect(audioCtx.destination);
-    //soundSource.loop = true;
-    //soundSource.start();
+    }, function (e) {
+        "Error with decoding audio data" + e.err
+    });
 };
-
 ajaxRequest.send();
-
-// set up canvas context for visualizer
-var canvas = document.querySelector('.visualizer');
-var canvasCtx = canvas.getContext("2d");
-
-var intendedWidth = document.querySelector('.wrapper').clientWidth;
-// console.log("intendedWidth= " + intendedWidth);
-canvas.setAttribute('width', intendedWidth);
-
-// var halfIntendedWidth = intendedWidth / 2;
-// canvas.setAttribute('width',halfIntendedWidth);
-// console.log("canvas now halfIntendedWidth= " + halfIntendedWidth);
-
-// var doubleIntendedWidth = intendedWidth * 2;
-// canvas.setAttribute('width',doubleIntendedWidth);
-// console.log("canvas now doubleIntendedWidth= " + doubleIntendedWidth);
-
-// not much difference btwn quad and intended width
-// var quadIntendedWidth = intendedWidth * 4;
-// canvas.setAttribute('width',quadIntendedWidth);
-// console.log("canvas now quadIntendedWidth= " + quadIntendedWidth);
-
-var visualSelect = document.getElementById("visual");
-
-var drawVisual;
-
 // main block for doing the audio recording
 if (navigator.getUserMedia) {
     console.log('getUserMedia supported.');
@@ -110,169 +65,290 @@ if (navigator.getUserMedia) {
     console.log('getUserMedia not supported on your browser!');
 }
 
-// The voiced speech of a typical adult male will have a fundamental frequency from 85 to 180 Hz, and that of a typical adult female from 165 to 255 Hz.
-function visualize() {
+
+var canvas = document.querySelector('.visualizer');
+var canvasCtx = canvas.getContext("2d");
+var intendedWidth = document.querySelector('.wrapper').clientWidth;
+canvas.setAttribute('width', intendedWidth);
+var visualSetting = "frequencybars";
+var drawVisual;
+analyser.fftSize = 2048;
+var bufferLength = analyser.frequencyBinCount;
+var dataArray = new Uint8Array(bufferLength);
+var voiceFreqs;
+let start;
+var WIDTH;
+var HEIGHT;
+var threeSecondsOfVoice = false;
+var fiveSecondsOfVoice = false;
+var circle = document.getElementById("circle");
+circle.style.position = 'absolute';
+var hue = 360;
+var light = 0;
+var lastAnimation = null;
+
+// _.debounce(func, [wait=0], [options={}])
+var randomAnimation = _.debounce(function randomAnimation2() {
+    // console.log("animations.length= "+ animations.length);
+
+    var animations = [
+        changeBackground,
+        changeBackground2,
+        changeCanvasBackground,
+        changeCanvasBackground2
+    ];
+
+    const length = animations.length;
+    const rand = Math.floor(Math.random() * length);
+    const animation = animations[rand];
+    if (animation === lastAnimation) {
+        return randomAnimation2();
+    }
+    lastAnimation = animation;
+    return animation();
+}, 100, {leading: true, trailing: false});
+// couple this is randomAnimation()
+
+
+function visualize(timestamp) {
+    requestAnimationFrame(visualize);
     WIDTH = canvas.width;
     HEIGHT = canvas.height;
+    canvasCtx.fillStyle = 'rgb(0, 0, 26)';
 
-    var visualSetting = visualSelect.value;
-    console.log(visualSetting);
 
-    if (visualSetting == "sinewave") {
-        // representing the size of the FFT (Fast Fourier Transform) to be used to determine the frequency domain.
-        // analyser.fftSize = 2048;
-        analyser.fftSize = 1024;
-        // analyser.fftSize = 512;
-        // analyser.fftSize = 256;
-        // analyser.fftSize = 128;
-        var bufferLength = analyser.fftSize;
-        console.log("bufferLength= " + bufferLength);
-        // think I might have stumbled onto something here
-        var dataArray = new Uint8Array(bufferLength);
-        console.log("dataArray= " + dataArray);
 
-        canvasCtx.clearRect(0, 0, WIDTH, HEIGHT);
+    if (threeSecondsOfVoice) {
+        randomAnimation();
+    }
+    canvasCtx.fillRect(0, 0, WIDTH, HEIGHT);
 
-        function draw() {
+    if (fiveSecondsOfVoice) {
+        canvasCtx.fillStyle = 'hsl(100, 80%, 25%)';
+    }
+    canvasCtx.fillRect(0, 0, WIDTH, HEIGHT);
 
-            drawVisual = requestAnimationFrame(draw);
+    drawVoiceFreqs();
+    resizeCanvas();
+    hasBeenThree(timestamp);
+    hasBeenFive(timestamp);
+}
 
-            analyser.getByteTimeDomainData(dataArray);
-            console.log("dataArray in draw()= " + dataArray);
+function changeBackground() {
+console.log("changeBackground");
+    function changeHue (){
+        var col1 = Math.abs((hue % 720) - 360);
+        var col2 = Math.abs( ( (hue+90) % 720) - 360);
+        hue++ ;
+        light++ ;
+        document.body.style.background = 'linear-gradient(to right, hsl('+col1 +',70%, 75%) 0%,hsl('+col2 +',90%,75%) 100%)';
+    }
+    changeHue();
+}
+// changeBackground();
+// canvasCtx.fillStyle = 'hsl(288, 100%, 50%)';
 
-            canvasCtx.fillStyle = 'rgb(0, 0, 26)';
-            canvasCtx.fillRect(0, 0, WIDTH, HEIGHT);
+function changeBackground2() {
+    console.log("changeBackground2");
 
-            canvasCtx.lineWidth = 1;
-            canvasCtx.strokeStyle = 'rgb(179, 255, 255)';
+    function changeHue (){
+        var col1 = Math.abs((hue % 20) - 360);
+        var col2 = Math.abs( ( (hue+80) % 700) - 360);
+        hue++ ;
+        light++ ;
+        document.body.style.background = 'linear-gradient(to right, hsl('+col1 +',70%, 75%) 0%,hsl('+col2 +',90%,75%) 100%)';
+    }
+    changeHue();
+}
 
-            canvasCtx.beginPath();
+function changeCanvasBackground() {
+    console.log("changeCanvasBackground");
 
-            var sliceWidth = WIDTH * 4 / bufferLength;
-            // var sliceWidth = WIDTH * 1 / bufferLength;
-            var x = 0;
+    canvasCtx.fillStyle = 'hsl(100, 80%, 25%)';
+}
 
-            for (var i = 0; i < bufferLength; i++) {
+function changeCanvasBackground2() {
+    console.log("changeCanvasBackground2");
+    canvasCtx.fillStyle = 'hsl(200, 90%, 45%)';
+}
 
-                var v = dataArray[i] / 128.0;
-                var y = v * HEIGHT / 2;
+function hasBeenThree(timestamp) {
+    if (!start) start = timestamp;
 
-                if (i === 0) {
-                    canvasCtx.moveTo(x, y);
-                } else {
-                    canvasCtx.lineTo(x, y);
-                }
+    var voiceFreqs = dataArray.filter(function (frequency) {
+        if (frequency >= 80 && frequency <= 255) {
 
-                x += sliceWidth;
-            }
-
-            canvasCtx.lineTo(canvas.width, canvas.height / 2);
-            canvasCtx.stroke();
+            return true;
+        } else {
+            return false;
         }
+    });
+    if (voiceFreqs.length == 0) {
+        start = timestamp;
+    }
+    var progress = timestamp - start;
+    // console.log("progress= " + progress);
 
-        draw();
+    if (progress > 3000) {
+        console.log("threeSecondsOfVoice");
+        threeSecondsOfVoice = true;
+        // circle.style.left = Math.min(progress / 10, 200) + "px";
+    } else {
+        threeSecondsOfVoice = false;
+    }
+}
+function hasBeenFive(timestamp) {
+    if (!start) start = timestamp;
 
-    } else if (visualSetting == "frequencybars") {
-        // representing the size of the FFT (Fast Fourier Transform) to be used to determine the frequency domain.
-        //with 2048, the bars are skinnier and prettier
-        // analyser.fftSize = 4096;
-        analyser.fftSize = 2048;
-        // analyser.fftSize = 256;
-        // unsigned long value half that of the FFT size
-        // This generally equates to the number of data values you will have to play with for the visualization.
-        var bufferLength = analyser.frequencyBinCount;
-        // console.log("bufferLength= " + bufferLength);
-        var dataArray = new Uint8Array(bufferLength);
+    var voiceFreqs = dataArray.filter(function (frequency) {
+        if (frequency >= 80 && frequency <= 255) {
 
-        // canvasCtx.fillRect(128, 255, 255);
-        // x =The x-coordinate of the upper-left corner of the rectangle to clear
-        // y = The y-coordinate of the upper-left corner of the rectangle to clear
-        // width = The width of the rectangle to clear, in pixels
-        // height = The height of the rectangle to clear, in pixels
-
-        //clear the canvas of what had been drawn on it before to get ready for the new visualization display
-        canvasCtx.clearRect(0, 0, WIDTH, HEIGHT);
-
-        function draw() {
-
-            drawVisual = requestAnimationFrame(draw);
-
-            analyser.getByteFrequencyData(dataArray);
-            // the below makes it look almost like a sinewave
-            // analyser.getByteTimeDomainData(dataArray);
-
-            // console.log(dataArray, dataArray.filter);
-            var voiceFreqs = dataArray.filter(function(frequency){
-                if(frequency >= 80 && frequency <= 255){
-                    return true;
-                } else {
-                    return false;
-                }
-            });
-            console.log(voiceFreqs);
-
-            // voiceFreqs: 0 = few, 20 = a lot
-            // new canvas size
-            // 0 = 300 pageX20 = 500 px large
-            var length = Math.min(voiceFreqs.length, 20) * 6 + 300;
-            // var length = Math.min(voiceFreqs.length, 20) * 10 + 400;
-
-            canvas.width = length;
-            canvas.height = length;
-            document.querySelector("body").style.backgroundColor = "#00001a";
-
-            // midnight express blue
-            // canvasCtx.fillStyle = 'rgb(32, 40, 59)';
-
-            // canvas background
-            canvasCtx.fillStyle = 'rgb(0, 0, 26)';
-
-            // changing this x (350) and y (350) makes the bars stay
-            canvasCtx.fillRect(0, 0, WIDTH, HEIGHT);
-
-            // var barWidth = (WIDTH / bufferLength) * 4;
-            // var barWidth = (WIDTH / bufferLength) * 3;
-            // var barWidth = (WIDTH / bufferLength) * 2;
-            // bars skinnier than * 2
-            var barWidth = (WIDTH / bufferLength);
-            // var barWidth = (WIDTH / bufferLength) * 0.25;
-
-            // human voice 85-255
-            // barHeight = frequency
-            var barHeight;
-            var x = 0;
-
-            for (var i = 0; i < bufferLength; i++) {
-                barHeight = dataArray[i];
-
-                // color of bars
-                canvasCtx.fillStyle = 'rgb(179, 255, 255)';
-                // canvasCtx.fillStyle = 'rgb(52, 149, 151)'; //179, 255, 255
-
-                // other best so far
-                // centered (ish) mirrored bars
-                // canvasCtx.fillRect(x, HEIGHT - barHeight / 3, barWidth, barHeight / 2);
-
-                canvasCtx.fillRect(x, HEIGHT - barHeight / 2, barWidth * 2, barHeight / 1.25);
-
-                x += barWidth + 2;
-
-            }
+            return true;
+        } else {
+            return false;
         }
+    });
+    if (voiceFreqs.length == 0) {
+        start = timestamp;
+    }
+    var progress = timestamp - start;
+    // console.log("progress= " + progress);
 
-        draw();
+    if (progress > 5000) {
+        console.log("fiveSecondsOfVoice");
 
-    } else if (visualSetting == "off") {
-        canvasCtx.clearRect(0, 0, WIDTH, HEIGHT);
-
-        // canvasCtx.fillStyle = "cyan";
-        canvasCtx.fillRect(0, 0, WIDTH, HEIGHT);
+        fiveSecondsOfVoice = true;
+        // circle.style.left = Math.min(progress / 10, 200) + "px";
+    } else {
+        fiveSecondsOfVoice = false;
     }
 }
 
-// event listeners to change visualize and voice settings
-visualSelect.onchange = function () {
-    window.cancelAnimationFrame(drawVisual);
-    visualize();
-};
+function drawVoiceFreqs() {
 
+    analyser.getByteFrequencyData(dataArray);
+
+    var barWidth = (WIDTH / bufferLength);
+    var barHeight;
+    var x = 0;
+
+    for (var i = 0; i < bufferLength; i++) {
+        barHeight = dataArray[i];
+        canvasCtx.fillStyle = 'rgb(179, 255, 255)'; // color of bars
+        canvasCtx.fillRect(x, HEIGHT - barHeight / 2, barWidth * 2, barHeight / 1.25);
+        x += barWidth + 2;
+    }
+}
+
+
+function resizeCanvas() {
+
+    var voiceFreqs = dataArray.filter(function (frequency) {
+        if (frequency >= 80 && frequency <= 255) {
+            return true;
+        } else {
+            return false;
+        }
+    });
+    // console.log(voiceFreqs);
+
+    var length = Math.min(voiceFreqs.length, 20) * 6 + 300;
+    canvas.style.transform = "translate(length,length)";
+
+    // var length = Math.min(voiceFreqs.length, 20) * 6 + 300;
+
+    circle.style.width = length + "px";
+    circle.style.height = length + "px";
+}
+
+
+// event listeners to change visualize and voice settings
+// visualSelect.onchange = function () {
+//     window.cancelAnimationFrame(drawVisual);
+//     window.cancelAnimationFrame(step);
+visualize();
+// };
+
+
+// document.querySelector("body").style.backgroundColor = "#00001a";
+
+// extra calculation
+// delta time
+// diff btwn time from start
+
+// zombie game
+// class Game {
+//     constructor (canvas) {
+//         this.then = null;
+//         this.canvas = canvas;
+//         this.ctx = canvas.getContext('2d');;
+//     }
+//     run (now) {
+//         requestAnimationFrame(this.run.bind(this));
+//         if (!this.then) {this.then = performance.now()}
+//         let dt = now - this.then;
+//         this.then = now;
+//
+//         this.update(dt);
+//         this.draw();
+//     }
+//     update (dt) {
+//         actors.forEach(a => a.update(dt));
+//     }
+//     draw () {
+//         this.ctx.save();
+//         this.ctx.fillStyle = 'hsl(0, 50%, 90%)';
+//         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+//         this.ctx.restore();
+//         actors.forEach(a => a.draw(this.ctx));
+//     }
+// }
+//
+// let canvas = document.getElementsByTagName('canvas')[0];
+//
+// const game = new Game(canvas);
+// requestAnimationFrame(game.run.bind(game));
+
+// ballpen
+
+// let dt = 0;
+// let lastTime = 0;
+
+// function step (timestamp) {
+//     requestAnimationFrame(step);
+//     dt += timestamp - lastTime;
+//     var progress = timestamp - start;
+//     circle.style.left = Math.min(progress / 10, 200) + "px";
+//     const seconds = (dt / 1000) % 2;
+//     const height = -Math.pow((seconds - 1), 2) + 1;
+//     console.log("timestamp= " + timestamp);
+//     if (progress < 2000) {
+//         window.requestAnimationFrame(step);
+//     }
+//     circle.style.transform = `translate(0, 100px) translate(${seconds * 100}px, ${height * -100}px)`;
+//
+//     // follower.update((timestamp - lastTime) / 1000);
+//     // follower.draw();
+//
+//     lastTime = timestamp;
+// }
+//
+// requestAnimationFrame(step);
+
+
+// function animateCanvas(){
+//     voiceFreqs = dataArray.filter(function (frequency) {
+//         if (frequency >= 80 && frequency <= 255) {
+//             return true;
+//         } else {
+//             return false;
+//         }
+//     });
+//     // console.log(voiceFreqs);
+//
+//     var length = Math.min(voiceFreqs.length, 20) * 6 + 300;
+//
+//     // canvas.style.transform = "translate(length,length)";
+//     canvas.width = length;
+//     canvas.height = length;
+// }
